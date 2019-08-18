@@ -1,24 +1,38 @@
-﻿let memory_array = ['A', 'A', 'B', 'B', 'C', 'C', 'D', 'D', 'E', 'E', 'F', 'F', 'G', 'G', 'H', 'H'];
-let memory_values = [];
-let memory_tile_ids = [];
-let tiles_flipped = 0;
-let moves = 0, clickCount = 0;
-let timer;
-// Get the modal
-var modal = document.getElementById("myModal");
-// Get the <span> element that closes the modal
-var span = document.getElementsByClassName("close")[0];
-var noOfMoves = document.getElementsByClassName("noOfMoves")[0];
-var rating = document.getElementsByClassName("rating")[0];
-var timeTaken = document.getElementsByClassName("timeTaken")[0];
-// When the user clicks on <span> (x), close the modal
-span.onclick = function() {
-  modal.style.display = "none";
+﻿let tiles = ['A', 'A', 'B', 'B', 'C', 'C', 'D', 'D', 'E', 'E', 'F', 'F', 'G', 'G', 'H', 'H'];
+let tiles_value = [];
+let tiles_id = [];
+let tiles_flipped = 0, // how many tiles are flipped, (factor to decide game end{tiles_flipped == tiles.length})
+    moves = 0,        // count of the no. of moves player has made(2 valid click = 1 move)
+    clickCount = 0; 
+let timer;           // will be initialised when game starts
+
+/* Define modal variables */
+let modal = document.getElementById("myModal");
+let noOfMoves_modal = document.getElementsByClassName("noOfMoves")[0];
+let timeTaken_modal = document.getElementsByClassName("timeTaken")[0];
+let rating_modal = document.getElementsByClassName("rating")[0];
+let playAgain = document.getElementById("playAgain");
+let closeModal = document.getElementsByClassName("close")[0];
+
+playAgain.onclick = function(){
+    modal.style.display = "none"
+    reset();
+}
+closeModal.onclick = function() {
+    modal.style.display = "none";
 }
 
-document.getElementById('moves').innerHTML = moves;
+// When the user clicks anywhere outside of the modal, then also close it
+window.onclick = function(event) {
+    if (event.target == modal) {
+      modal.style.display = "none";
+    }
+}
 
-// shuffle the array
+let resetIcon = document.getElementById("reset");
+resetIcon.addEventListener('click', reset);
+
+// method to shuffle the tiles (array elements)
 Array.prototype.memory_tile_shuffle = function () {
     let i = this.length, j, temp;
     while (--i > 0) {
@@ -30,45 +44,41 @@ Array.prototype.memory_tile_shuffle = function () {
 }
 
 function newBoard() {
-    console.log("sad")
+
     tiles_flipped = 0;
     clickCount = 0;
     moves = 0;
-    memory_values = []
-    memory_tile_ids= []
+    tiles_value = []
+    tiles_id= []
+    tiles.memory_tile_shuffle();
+    
     let output = '';
-
-    memory_array.memory_tile_shuffle();
-    for (let i = 0; i < memory_array.length; i++) {
-        // output += '<div id="tile_' + i + '" onclick="memoryFlipTile(this,\'' + memory_array[i] + '\')"></div>';
-        let val = memory_array[i]
+    for (let i = 0; i < tiles.length; i++) {
         output += 
-            '<div class="flip-card" id="tile_'+i+'" onclick="memoryFlipTile(this,\'' + memory_array[i] + '\')"><div class="flip-card-inner"><div class="flip-card-front"></div><div class="flip-card-back" /><span></span></div></div></div>'
+            '<div class="flip-card" id="tile_'+i+'" onclick="filpTile(this,\'' + tiles[i] + '\')"><div class="flip-card-inner"><div class="flip-card-front"></div><div class="flip-card-back" /><span></span></div></div></div>'
     }
 
-    console.log(memory_array)
-    document.getElementById('moves').innerHTML = moves;
+    /* Set initial move count to 0 */
+    document.getElementById('moves').innerHTML = 0;
+    /* set the tiles board */
     document.getElementById('tiles').innerHTML = output;
+
+    console.log(tiles) 
 }
 
-// function check(context,data){
-//     var child = context.children[0].children;
-//     console.log("Clicked11", data, context, child)
-// }
+function filpTile(tile, val) {
 
-function memoryFlipTile(tile, val) {
-    console.log("clicked")
     if (clickCount == 0) {
         startTimer();
     }
     clickCount += 1;
 
-    var inner = tile.children[0];
-    var front = inner.children[0];
-    var back  = inner.children[1];
-    var spanContainingEle = back.children[0]
+    let inner = tile.children[0];
+    let front = inner.children[0];
+    let back  = inner.children[1];
+    let spanContainingEle = back.children[0]
 
-    if (spanContainingEle.innerHTML == "" && memory_values.length < 2) {
+    if (spanContainingEle.innerHTML == "" && tiles_value.length < 2) {
 
         inner.style.transform = 'rotateY(180deg)';
         spanContainingEle.innerHTML = val;
@@ -76,25 +86,26 @@ function memoryFlipTile(tile, val) {
         if (clickCount % 2 == 0) {
             moves += 1;
         }
-
         document.getElementById('moves').innerHTML = moves;
 
-        if (memory_values.length == 0) {
-            memory_values.push(val);
-            memory_tile_ids.push(tile.id);
+        if (tiles_value.length == 0) {
+            tiles_value.push(val);
+            tiles_id.push(tile.id);
         }
-        else if (memory_values.length == 1) {
-            memory_values.push(val);
-            memory_tile_ids.push(tile.id);
-            if (memory_values[0] == memory_values[1]) {
+        else if (tiles_value.length == 1) {
+            tiles_value.push(val);
+            tiles_id.push(tile.id);
+            if (tiles_value[0] == tiles_value[1]) {
                 tiles_flipped += 2;
-                memory_values = [];
-                memory_tile_ids = [];
-                // GAME OVER
-                if (tiles_flipped == memory_array.length) {
-                    generateStars();
-                    noOfMoves.innerHTML = "No of moves: " + moves;
-                    timeTaken.innerHTML = timer.getTimeValues().minutes + " " + "min" + " " + timer.getTimeValues().seconds + " " + "sec";
+                tiles_value = [];
+                tiles_id = [];
+                /* GAME OVER, show the result */
+                if (tiles_flipped == tiles.length) {
+                    let stars = generateStars();
+                    document.getElementById('rating').innerHTML = stars;
+                    rating_modal.innerHTML = stars;
+                    noOfMoves_modal.innerHTML = "No of moves: " + moves;
+                    timeTaken_modal.innerHTML = timer.getTimeValues().minutes + " " + "min" + " " + timer.getTimeValues().seconds + " " + "sec";
                     modal.style.display = "block";
                     timer.pause();
                 }
@@ -102,8 +113,8 @@ function memoryFlipTile(tile, val) {
             else {
                 function flip2Back() {
                     // Flip the 2 inner tiles back, by removing rotateY style
-                    let tile1_inner = document.getElementById(memory_tile_ids[0]).children[0];
-                    let tile2_inner = document.getElementById(memory_tile_ids[1]).children[0];
+                    let tile1_inner = document.getElementById(tiles_id[0]).children[0];
+                    let tile2_inner = document.getElementById(tiles_id[1]).children[0];
                     
                     let tile1_back = tile1_inner.children[1]
                     let tile2_back = tile2_inner.children[1]
@@ -114,8 +125,8 @@ function memoryFlipTile(tile, val) {
                     tile2_inner.removeAttribute("style");
                     tile2_back.children[0].innerHTML = "";
                     // Clear both arrays
-                    memory_values = [];
-                    memory_tile_ids = [];
+                    tiles_value = [];
+                    tiles_id = [];
                 }
                 setTimeout(flip2Back, 500);
             }
@@ -123,26 +134,25 @@ function memoryFlipTile(tile, val) {
     }
 }
 
-let resetIcon = document.getElementById("reset");
-resetIcon.addEventListener('click', reset);
-let playAgain = document.getElementById("playAgain");
-playAgain.onclick = function(){
-    modal.style.display = "none"
-    reset();
-}
-
 function reset(){
-    document.getElementById('tiles').innerHTML = "";
-    newBoard();
+
     stopTimer();
-    document.getElementById('rating').innerHTML = "";
-    rating.innerHTML = ""
-    timeTaken.innerHTML = ""
+   
+    /* 1. Reset Game Status Panel */
+    document.getElementById('rating').innerHTML = "";    // clear the rating from status panel above the board
+
+    /* 2. Reset the Board containing tiles */
+    document.getElementById('tiles').innerHTML = ""; // clear tiles from the board
+    newBoard(); // create a new board
+
+    /* 3. Reset the modal */
+    rating_modal.innerHTML = ""      // clear the rating from model if any
+    timeTaken_modal.innerHTML = ""  // clear the timeTaken from model if any
+    noOfMoves_modal.innerHTML = ""  // clear the noOfMoves from model if any
 }
 
 function startTimer() {
     timer = new Timer();
-    console.log(timer);
     timer.start();
     timer.addEventListener('secondsUpdated', function (e) {
         document.getElementById('minutes').innerHTML = timer.getTimeValues().minutes;
@@ -170,17 +180,10 @@ function generateStars() {
         for (let i = 0; i < 1; i++)
             output += '<img width="25px" height="25px" src="https://png.pngtree.com/svg/20170626/da7858959c.svg"></img>';
     }
-    document.getElementById('rating').innerHTML = output;
-    rating.innerHTML = output;
+    return output;
 }
 
+// load a new Board when window loads
 window.onload = function () {
     newBoard();
-}
-
-// When the user clicks anywhere outside of the modal, close it
-window.onclick = function(event) {
-  if (event.target == modal) {
-    modal.style.display = "none";
-  }
 }
